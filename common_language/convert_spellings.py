@@ -1,4 +1,5 @@
-import re,sys
+import re
+from typing import Optional
 
 wordpairs = [
     ('accessorise','accessorize'),
@@ -1513,8 +1514,8 @@ wordpairs = [
     ('stigmatised','stigmatized'),
     ('stigmatises','stigmatizes'),
     ('stigmatising','stigmatizing'),
-    (' storey',' story'),
-    (' storeys',' stories'),
+    ('storey','story'),
+    ('storeys','stories'),
     ('subsidisation','subsidization'),
     ('subsidise','subsidize'),
     ('subsidised','subsidized'),
@@ -1746,51 +1747,59 @@ wordpairs = [
     ('yoghurt','yogurt'),
     ('yoghurts','yogurts')]
 
-dontfix = [('centreing','centering')]
+dontfix = [('centreing', 'centering')]
 
 wordback = wordpairs[::-1]
 wordback.extend(dontfix)
 
-try:
-    filename = sys.argv[1]
-except IndexError:
-    print('\nMust include name of file with input text')
-    print('')
-    print('Example:')
-    print('\tpython britishize.py amtext1.tex [brittext1.tex]\n')
-    sys.exit(0)
-
-with open(filename,'r') as f:
-    filedata = f.read()
-
 padding = 20
 
-print('Beginning Americanization')
-print('------------------------')
 
-count = 0
-for _a,_b in wordback:
+def validate_occurences(file_data, target, conversion):
+    for m in re.finditer(target, file_data):
+        index = m.start()
+        if len(target) > len(conversion):
+            yield index
+        else:
+            if conversion != file_data[index: index + len(conversion)]:
+                yield index
 
-    for b,a in ((_b,_a),(_b.capitalize(),_a.capitalize())):
 
-        l = filedata.count(a)
-        if l > 0:
-            indices = [m.start() for m in re.finditer(a, filedata)]
-            for ind in indices:
-                oldbit = filedata[ind-padding:ind+padding]
-                newbit = oldbit.replace(a,b)
-                print("'... {0:50s} ...' - > '... {1:50s} ...'".format(''.join(oldbit.split('\n')),''.join(newbit.split('\n'))))
-            filedata = filedata.replace(a,b)
-            count += l
+def convert_spelling(filepath, output_filepath: Optional[str] = None, british_to_american: bool = True):
 
-print('')
-print('Finished Americanization of {0:d}'.format(sys.argv[1]))
-print('{0:d} changes made.'.format(count))
-print('------------------------')
+    if british_to_american:
+        action = 'Americanization'
+        target_index, conversion_index = 0, 1
+    else:
+        action = 'Britishisation'
+        target_index, conversion_index = 1, 0
 
-if len(sys.argv) > 2:
-    outfile = sys.argv[2]
-    
-    with open(outfile,'w') as f:
-        f.write(filedata)
+    with open(filepath, 'r') as input_file:
+
+        file_data = input_file.read()
+        count = 0
+
+        for wordpair in wordback:
+            target = wordpair[target_index]
+            conversion = wordpair[conversion_index]
+            for conversion, target in ((conversion, target), (conversion.capitalize(), target.capitalize())):
+                target_occurrence = file_data.count(target)
+                if target_occurrence > 0:
+                    validated_occurences = len(
+                        list(validate_occurences(file_data=file_data, target=target, conversion=conversion))
+                    )
+                    if validated_occurences > 0:
+                        file_data = file_data.replace(target, conversion)
+                        count += validated_occurences
+
+        print('')
+        print(f'Finished {action} of {filepath}')
+        print('{0:d} changes made.'.format(count))
+        print('------------------------')
+
+    if output_filepath is None:
+        output_filepath = filepath
+
+    with open(output_filepath, 'w') as output_file:
+        output_file.write(file_data)
 

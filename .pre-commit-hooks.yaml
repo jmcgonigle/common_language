@@ -1,0 +1,9 @@
+- id: common_language
+  name: common_language
+  description: "Common Language: A tool to standardise language within code for multi-national teams. "
+  entry: common_language
+  language: python
+  language_version: python3
+  minimum_pre_commit_version: 2.9.2
+  require_serial: true
+  types_or: [python, pyi]
