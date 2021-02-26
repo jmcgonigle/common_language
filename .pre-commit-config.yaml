@@ -8,4 +8,4 @@ repos:
         minimum_pre_commit_version: 2.9.2
         require_serial: true
         types_or: [python, pyi]
-        args: [--prose-wrap=always, --print-width=88]
+        #args: [--britishise]
